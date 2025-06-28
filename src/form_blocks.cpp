@@ -16,6 +16,10 @@ public:
         instrs.clear();
     }
 
+    size_t numInstrs() {
+      return instrs.size();
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const BasicBlock& bb);
 
 private:
@@ -52,6 +56,11 @@ std::vector<BasicBlock> form_blocks(const json& func) {
             block.addInstr(instr);
         }
     }
+
+    if (block.numInstrs() > 0) {
+        blocks.push_back(block);
+    }
+
     return blocks;
 }
 
