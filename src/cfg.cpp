@@ -1,4 +1,5 @@
 #include <map>
+#include <unordered_set>
 #include <vector>
 #include "basic_block.hpp"
 #include "form_blocks.cpp"
@@ -39,6 +40,37 @@ std::map<std::string, std::vector<std::string>> get_successors(
     return successors;
 }
 
+void dce_block(BasicBlock& block) {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        std::unordered_set<std::string> uses;
+        for (const auto& instr: block.instrs) {
+            if (instr.contains("args")) {
+                for (const auto& arg: instr["args"]) {
+                    uses.insert(arg);
+                }
+            }
+        }
+
+        for (auto it = block.instrs.begin(); it != block.instrs.end(); ) {
+            if ((*it).contains("dest") && (uses.find((*it)["dest"]) == uses.end())) {
+                block.instrs.erase(it);
+                changed = true;
+            }
+            else {
+                it++;
+            }
+        }
+    }
+}
+
+void dce_block_map(std::map<std::string, BasicBlock>& blockMap) {
+    for (auto& block: blockMap) {
+        dce_block(block.second);
+    }
+}
+
 int main(int argc, char** argv) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << "<filename.json>\n";
@@ -51,14 +83,25 @@ int main(int argc, char** argv) {
     for (const auto& func : prog["functions"]) {
         std::vector<BasicBlock> blocks = form_blocks(func);
         auto blockMap = create_block_map(blocks);
-        auto successors = get_successors(blockMap);
-        for (const auto& i : successors) {
-            std::cout << i.first << ": ";
-            for (const auto& succ : i.second) {
-                std::cout << succ << ", ";
-            }
-            std::cout << std::endl;
+        std::cout << "Original!!!" << std::endl;
+        for (const auto& block: blockMap) {
+            std::cout << block.first << ": " << std::endl;
+            std::cout << block.second << std::endl;
         }
+        dce_block_map(blockMap);
+        std::cout << "DCE'd!!!" << std::endl;
+        for (const auto& block: blockMap) {
+            std::cout << block.first << ": " << std::endl;
+            std::cout << block.second << std::endl;
+        }
+        // auto successors = get_successors(blockMap);
+        // for (const auto& i : successors) {
+        //     std::cout << i.first << ": ";
+        //     for (const auto& succ : i.second) {
+        //         std::cout << succ << ", ";
+        //     }
+        //     std::cout << std::endl;
+        // }
     }
     return 0;
 }

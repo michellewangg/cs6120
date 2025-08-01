@@ -36,7 +36,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, const BasicBlock& bb);
 
-private:
+    // TODO: Make private
     std::vector<json> instrs;
 };
 
